@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Happy New Year Countdown</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Cursive', sans-serif;
+      color: white;
+      text-align: center;
+      background: linear-gradient(to bottom, #000428, #004e92);
+      overflow: hidden;
+    }
+
+    video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -1;
+    }
+
+    .countdown {
+      font-size: 4rem;
+      margin-top: 20%;
+      text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 30px rgba(255, 255, 255, 0.6);
+      animation: pulse 1.5s infinite;
+    }
+
+    .happy-new-year {
+      display: none;
+      font-size: 5rem;
+      animation: fadeIn 2s ease-in-out, glow 1.5s infinite alternate;
+      text-shadow: 0 0 20px #ffdd00, 0 0 30px #ffdd00;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes glow {
+      from { text-shadow: 0 0 20px #ffdd00, 0 0 30px #ffdd00; }
+      to { text-shadow: 0 0 40px #ffd700, 0 0 60px #ffd700; }
+    }
+
+    .fireworks {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <video autoplay muted loop>
+    <source src="background.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+
+  <div class="countdown" id="countdown">Loading...</div>
+  <div class="happy-new-year" id="newYear">🎉 Happy New Year! 🎆</div>
+
+  <canvas class="fireworks" id="fireworks"></canvas>
+
+  <script>
+    const countdownEl = document.getElementById('countdown');
+    const newYearEl = document.getElementById('newYear');
+    const fireworksCanvas = document.getElementById('fireworks');
+    const ctx = fireworksCanvas.getContext('2d');
+
+    fireworksCanvas.width = window.innerWidth;
+    fireworksCanvas.height = window.innerHeight;
+
+    // Update countdown every second
+    const updateCountdown = () => {
+      const now = new Date();
+      const midnight = new Date();
+      midnight.setHours(24, 0, 0, 0);
+
+      const diff = midnight - now;
+      if (diff <= 0) {
+        showNewYear();
+        return;
+      }
+
+      const hours = String(Math.floor((diff / (1000 * 60 * 60)) % 24)).padStart(2, '0');
+      const minutes = String(Math.floor((diff / (1000 * 60)) % 60)).padStart(2, '0');
+      const seconds = String(Math.floor((diff / 1000) % 60)).padStart(2, '0');
+
+      countdownEl.textContent = `${hours}:${minutes}:${seconds}`;
+    };
+
+    const showNewYear = () => {
+      countdownEl.style.display = 'none';
+      newYearEl.style.display = 'block';
+      launchFireworks();
+      sendMessage();
+    };
+
+    const sendMessage = () => {
+      fetch('/send-message', { method: 'POST' }); // Assuming backend API is ready
+    };
+
+    const launchFireworks = () => {
+      const particles = [];
+      const colors = ['#FF0000', '#FFFF00', '#00FF00', '#00FFFF', '#FF00FF'];
+
+      class Particle {
+        constructor(x, y, color) {
+          this.x = x;
+          this.y = y;
+          this.color = color;
+          this.radius = Math.random() * 2 + 1;
+          this.velocityX = (Math.random() - 0.5) * 4;
+          this.velocityY = (Math.random() - 0.5) * 4;
+          this.alpha = 1;
+        }
+
+        draw() {
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+          ctx.fillStyle = this.color;
+          ctx.globalAlpha = this.alpha;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+
+        update() {
+          this.x += this.velocityX;
+          this.y += this.velocityY;
+          this.alpha -= 0.01;
+        }
+      }
+
+      const createFirework = () => {
+        const x = Math.random() * fireworksCanvas.width;
+        const y = Math.random() * fireworksCanvas.height;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+
+        for (let i = 0; i < 50; i++) {
+          particles.push(new Particle(x, y, color));
+        }
+      };
+
+      const animateFireworks = () => {
+        ctx.clearRect(0, 0, fireworksCanvas.width, fireworksCanvas.height);
+
+        particles.forEach((particle, index) => {
+          if (particle.alpha <= 0) {
+            particles.splice(index, 1);
+          } else {
+            particle.update();
+            particle.draw();
+          }
+        });
+
+        requestAnimationFrame(animateFireworks);
+      };
+
+      setInterval(createFirework, 500);
+      animateFireworks();
+    };
+
+    setInterval(updateCountdown, 1000);
+  </script>
+</body>
+</html>
